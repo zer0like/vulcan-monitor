@@ -1,0 +1,15 @@
+[Unit]
+Description=iGame Vulcan LCD Monitoring Service
+After=network.target nvidia-persistenced.service
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/vulcan-monitor/vulcan_monitor.py
+WorkingDirectory=/opt/vulcan-monitor
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+RestartSec=5
+User=zer0like
+
+[Install]
+WantedBy=multi-user.target
