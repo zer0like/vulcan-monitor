@@ -15,8 +15,9 @@ from collections import deque
 # --- CONFIGURATION SETTINGS ---
 PORT = '/dev/ttyACM0'
 BAUD = 115200
-UPDATE_INTERVAL = 1    # Seconds between each telemetry update
-ROTATION_INTERVAL = 10   # How many updates to stay on one widget before switching
+UPDATE_INTERVAL = 0.8    # Seconds between each telemetry update
+ROTATION_INTERVAL = 15   # How many updates to stay on one widget before switching
+FAN_MAX_RPM = 3000       # Estimated max RPM for 3080 Ti Vulcan fans
 # ------------------------------
 
 # Native Command IDs for Vulcan X (LCD3 Protocol)
@@ -25,10 +26,10 @@ WIDGET_GPU_LOAD = 0x55AA
 WIDGET_GPU_FAN  = 0x7788
 CMD_SET_MONITOR_RECORD = 0xED12 
 CMD_SET_OP = 0xEB14
+CMD_SET_ID = 0xEC13
 
 # Constants for scaling
 GPU_FREQ_MAX = 2500
-FAN_SPEED_MAX = 100
 
 try:
     import pynvml
@@ -102,7 +103,9 @@ class VulcanMonitor:
             self.ser.dtr = True
             self.ser.rts = True
             time.sleep(0.1)
+            # Restore theme and unlock
             self.ser.write(self.build_packet_raw(b'\xEB\x14\x01'))
+            self.ser.write(self.build_packet_raw(b'\xEC\x13\x01'))
             return True
         except Exception as e:
             print(f"[!] Serial Communication Error: {e}")
@@ -132,7 +135,10 @@ class VulcanMonitor:
                 except:
                     fan_pct = 0
                 
-                # 2. Update graph histories
+                # Calculate estimated RPM for the display
+                fan_rpm = int((fan_pct / 100.0) * FAN_MAX_RPM)
+                
+                # 2. Update graph histories (always 0-100 for the scrolling graph)
                 self.histories[WIDGET_GPU_FREQ].append(int(min(100, (freq / GPU_FREQ_MAX) * 100)))
                 self.histories[WIDGET_GPU_LOAD].append(util)
                 self.histories[WIDGET_GPU_FAN].append(fan_pct)
@@ -141,7 +147,8 @@ class VulcanMonitor:
                 if self.current_widget == WIDGET_GPU_FREQ:
                     p = self.build_widget_update(WIDGET_GPU_FREQ, freq, GPU_FREQ_MAX)
                 elif self.current_widget == WIDGET_GPU_FAN:
-                    p = self.build_widget_update(WIDGET_GPU_FAN, fan_pct, FAN_SPEED_MAX)
+                    # Send RPM values instead of percentage to match "RPM" label on LCD
+                    p = self.build_widget_update(WIDGET_GPU_FAN, fan_rpm, FAN_MAX_RPM)
                 else: # GPU Load
                     p = self.build_widget_update(WIDGET_GPU_LOAD, util)
                 
