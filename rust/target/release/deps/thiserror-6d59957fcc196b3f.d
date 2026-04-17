@@ -1,0 +1,14 @@
+/home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/deps/thiserror-6d59957fcc196b3f.d: /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/build/thiserror-d0ce7cf4354d574e/out/private.rs
+
+/home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/deps/libthiserror-6d59957fcc196b3f.rlib: /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/build/thiserror-d0ce7cf4354d574e/out/private.rs
+
+/home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/deps/libthiserror-6d59957fcc196b3f.rmeta: /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/build/thiserror-d0ce7cf4354d574e/out/private.rs
+
+/home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs:
+/home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs:
+/home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs:
+/home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs:
+/home/maxim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs:
+/home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/build/thiserror-d0ce7cf4354d574e/out/private.rs:
+
+# env-dep:OUT_DIR=/home/maxim/Documents/code-fun/vulcan-monitor/rust/target/release/build/thiserror-d0ce7cf4354d574e/out

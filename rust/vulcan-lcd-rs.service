@@ -1,0 +1,19 @@
+[Unit]
+Description=iGame Vulcan LCD Monitoring Service (Rust Edition)
+After=network.target nvidia-persistenced.service
+
+[Service]
+ExecStart=/opt/vulcan-monitor/vulcan-monitor-rs
+WorkingDirectory=/opt/vulcan-monitor
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+RestartSec=5
+User=zer0like
+# Optimization: Set lowest CPU priority
+Nice=19
+CPUSchedulingPolicy=idle
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

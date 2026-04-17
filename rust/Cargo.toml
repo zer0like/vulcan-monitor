@@ -1,0 +1,9 @@
+[package]
+name = "vulcan-monitor-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serialport = "4.3.0"
+nvml-wrapper = "0.10.0"
+ctrlc = "3.4"
