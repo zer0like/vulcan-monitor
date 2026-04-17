@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-iGame Vulcan LCD Monitor (RTX 3080 Ti)
+iGame Vulcan LCD Monitor (RTX 3080 Ti) - Cache Optimized Version
 Author: zer0like
 License: MIT
-Description: High-performance native telemetry dashboard for Colorful iGame Vulcan GPUs.
+Description: Ultra-low CPU usage native telemetry dashboard.
 """
 import serial
 import time
@@ -15,9 +15,9 @@ from collections import deque
 # --- CONFIGURATION SETTINGS ---
 PORT = '/dev/ttyACM0'
 BAUD = 115200
-UPDATE_INTERVAL = 0.8    # Seconds between each telemetry update
-ROTATION_INTERVAL = 15   # How many updates to stay on one widget before switching
-FAN_MAX_RPM = 3000       # Estimated max RPM for 3080 Ti Vulcan fans
+UPDATE_INTERVAL = 1.2    # Balanced interval for smooth graphs and low CPU
+ROTATION_INTERVAL = 10   # Number of updates per widget
+FAN_MAX_RPM = 3000       
 # ------------------------------
 
 # Native Command IDs for Vulcan X (LCD3 Protocol)
@@ -44,7 +44,12 @@ class VulcanMonitor:
         self.handle = None
         self.current_widget = WIDGET_GPU_FREQ
         
-        # History buffers (110 points each) for native scrolling graphs
+        # Caching layer to eliminate CPU recalculations
+        self.last_val = -1
+        self.last_widget = -1
+        self.cached_widget_packet = b''
+        
+        # Fast arrays for history
         self.histories = {
             WIDGET_GPU_FREQ: deque([0]*110, maxlen=110),
             WIDGET_GPU_LOAD: deque([0]*110, maxlen=110),
@@ -52,21 +57,18 @@ class VulcanMonitor:
         }
         
     def signal_handler(self, sig, frame):
-        """Handle system termination signals."""
         self.running = False
 
     def connect_nvml(self):
-        """Initialize NVIDIA Management Library."""
         try:
             pynvml.nvmlInit()
             self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
             return True
-        except Exception as e:
-            print(f"[!] NVML Initialization Error: {e}")
+        except:
             return False
 
     def build_packet_raw(self, full_payload):
-        """Wrap payload with LCD3 header and checksum."""
+        """Build full binary packet with header and checksum."""
         data_len = len(full_payload) + 2
         packet = bytearray([0xF6, 0x5A, 0xA9, (data_len >> 8) & 0xFF, data_len & 0xFF])
         packet.extend(full_payload)
@@ -76,46 +78,34 @@ class VulcanMonitor:
         return bytes(packet)
 
     def build_widget_update(self, widget_id, value, max_val=None):
-        """Prepare widget header and data payload (1 or 4 bytes)."""
         header = bytearray([
-            (widget_id >> 8) & 0xFF, 
-            widget_id & 0xFF, 
-            0x00, # Horizontal
-            0x00, 0xFF, 0xFF # Cyan color
+            (widget_id >> 8) & 0xFF, (widget_id & 0xFF), 
+            0x00, 0x00, 0xFF, 0xFF
         ])
-        
         if max_val is None:
             data = bytearray([value & 0xFF])
         else:
             data = bytearray([
-                (value >> 8) & 0xFF, 
-                value & 0xFF, 
-                (max_val >> 8) & 0xFF, 
-                max_val & 0xFF
+                (value >> 8) & 0xFF, value & 0xFF, 
+                (max_val >> 8) & 0xFF, max_val & 0xFF
             ])
-        
         return self.build_packet_raw(header + data)
 
     def connect_serial(self):
-        """Establish serial connection and perform handshake."""
         try:
             self.ser = serial.Serial(PORT, BAUD, timeout=0.1)
             self.ser.dtr = True
             self.ser.rts = True
             time.sleep(0.1)
-            # Restore theme and unlock
+            # Init sequence
             self.ser.write(self.build_packet_raw(b'\xEB\x14\x01'))
             self.ser.write(self.build_packet_raw(b'\xEC\x13\x01'))
             return True
-        except Exception as e:
-            print(f"[!] Serial Communication Error: {e}")
+        except:
             return False
 
     def run(self):
-        """Main monitoring loop."""
-        if not self.connect_nvml():
-            return
-        
+        if not self.connect_nvml(): return
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
 
@@ -125,9 +115,8 @@ class VulcanMonitor:
                 if not self.connect_serial():
                     time.sleep(5)
                     continue
-
             try:
-                # 1. Fetch live telemetry
+                # 1. Fetch fast NVML stats
                 freq = pynvml.nvmlDeviceGetClockInfo(self.handle, pynvml.NVML_CLOCK_GRAPHICS)
                 util = pynvml.nvmlDeviceGetUtilizationRates(self.handle).gpu
                 try:
@@ -135,49 +124,49 @@ class VulcanMonitor:
                 except:
                     fan_pct = 0
                 
-                # Calculate estimated RPM for the display
-                fan_rpm = int((fan_pct / 100.0) * FAN_MAX_RPM)
-                
-                # 2. Update graph histories (always 0-100 for the scrolling graph)
-                self.histories[WIDGET_GPU_FREQ].append(int(min(100, (freq / GPU_FREQ_MAX) * 100)))
+                # Update history buffers
+                self.histories[WIDGET_GPU_FREQ].append(int(min(100, (freq/GPU_FREQ_MAX)*100)))
                 self.histories[WIDGET_GPU_LOAD].append(util)
                 self.histories[WIDGET_GPU_FAN].append(fan_pct)
                 
-                # 3. Push Current Widget Stats
+                # 2. Determine widget values
+                cur_val = 0
+                max_v = None
                 if self.current_widget == WIDGET_GPU_FREQ:
-                    p = self.build_widget_update(WIDGET_GPU_FREQ, freq, GPU_FREQ_MAX)
+                    cur_val = freq
+                    max_v = GPU_FREQ_MAX
                 elif self.current_widget == WIDGET_GPU_FAN:
-                    # Send RPM values instead of percentage to match "RPM" label on LCD
-                    p = self.build_widget_update(WIDGET_GPU_FAN, fan_rpm, FAN_MAX_RPM)
-                else: # GPU Load
-                    p = self.build_widget_update(WIDGET_GPU_LOAD, util)
+                    cur_val = int((fan_pct / 100.0) * FAN_MAX_RPM)
+                    max_v = FAN_MAX_RPM
+                else:
+                    cur_val = util
+
+                # 3. Cache Optimization: Only rebuild widget packet if data changed
+                if cur_val != self.last_val or self.current_widget != self.last_widget:
+                    self.cached_widget_packet = self.build_widget_update(self.current_widget, cur_val, max_v)
+                    self.last_val = cur_val
+                    self.last_widget = self.current_widget
                 
-                self.ser.write(p)
-                time.sleep(0.05)
+                # LCD requires continuous packets to avoid freezing animations
+                self.ser.write(self.cached_widget_packet)
+                time.sleep(0.05) # Small delay to separate packets on hardware level
                 
-                # 4. Push 110-byte history for the Graph
-                h_data = bytearray([0xED, 0x12]) + bytes(list(self.histories[self.current_widget]))
+                # 4. History (Graph) update
+                # Since deque changes every tick, we build the byte array directly
+                h_data = bytearray([0xED, 0x12]) + bytes(self.histories[self.current_widget])
                 self.ser.write(self.build_packet_raw(h_data))
                 
-                # Auto-rotation logic
                 count += 1
                 if count >= ROTATION_INTERVAL:
-                    self.current_widget = {
-                        WIDGET_GPU_FREQ: WIDGET_GPU_LOAD, 
-                        WIDGET_GPU_LOAD: WIDGET_GPU_FAN, 
-                        WIDGET_GPU_FAN:  WIDGET_GPU_FREQ
-                    }[self.current_widget]
+                    self.current_widget = {WIDGET_GPU_FREQ: WIDGET_GPU_LOAD, WIDGET_GPU_LOAD: WIDGET_GPU_FAN, WIDGET_GPU_FAN: WIDGET_GPU_FREQ}[self.current_widget]
                     count = 0
                 
                 time.sleep(UPDATE_INTERVAL)
-                
-            except Exception as e:
-                print(f"[!] Loop Runtime Error: {e}")
+            except Exception:
                 self.ser = None
 
         pynvml.nvmlShutdown()
-        if self.ser:
-            self.ser.close()
+        if self.ser: self.ser.close()
 
 if __name__ == "__main__":
     monitor = VulcanMonitor()

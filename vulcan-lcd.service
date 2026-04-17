@@ -2,6 +2,10 @@
 Description=iGame Vulcan LCD Monitoring Service
 After=network.target nvidia-persistenced.service
 
+[Unit]
+Description=iGame Vulcan LCD Monitoring Service
+After=network.target nvidia-persistenced.service
+
 [Service]
 ExecStart=/usr/bin/python3 /opt/vulcan-monitor/vulcan_monitor.py
 WorkingDirectory=/opt/vulcan-monitor
@@ -10,6 +14,10 @@ StandardError=inherit
 Restart=always
 RestartSec=5
 User=zer0like
+# Optimization: Set lowest CPU priority
+Nice=19
+CPUSchedulingPolicy=idle
+IOSchedulingClass=idle
 
 [Install]
 WantedBy=multi-user.target
